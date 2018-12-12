@@ -5,35 +5,36 @@ the common functionalities
 """
 import json
 import os
+import time
 
-def get_value_from_dict_safe(d, key, default=None):
+
+def get_value_from_dict_safe(dict_, key, default=None):
     """
     get the value from dict
     args:
-        d: {dict}
+        dict_: {dict}
         key: {a hashable key, or a list of hashable key}
             if key is a list, then it can be assumed the input d is a nested dict
         default: return value if the key is not reachable, default is None
     return:
         value
     """
-    assert isinstance(
-        d, dict), "get_value_from_dict_safe, only supports dict, {} is given".format(type(d))
+    assert isinstance(dict_, dict), "only supports dict input, {} is given".format(type(dict_))
     if isinstance(key, list):
         for _k in key[:-1]:
-            if _k in d and isinstance(d[_k], dict):
-                d = d[_k]
+            if _k in dict_ and isinstance(dict_[_k], dict):
+                dict_ = dict_[_k]
             else:
                 return default
         key = key[-1]
-    return d.get(key, default)
+    return dict_.get(key, default)
 
 
-def set_value_to_dict_safe(d, key, value, append=False):
+def set_value_to_dict_safe(dict_, key, value, append=False):
     """
     set the value to dict
     args:
-        d: {dict}
+        dict_: {dict}
         key: {a hashable key, or a list of hashable key}
             if key is a list, then it can be assumed the input d is a nested dict
         value: value to be set
@@ -41,28 +42,27 @@ def set_value_to_dict_safe(d, key, value, append=False):
     return:
         bool: if the value is succesfully set
     """
-    assert isinstance(
-        d, dict), "set_value_to_dict_safe, only supports dict, {} is given".format(type(d))
+    assert isinstance(dict_, dict), "only supports dict input, {} is given".format(type(dict_))
     if isinstance(key, list):
         for _k in key[:-1]:
-            if _k in d:
-                if isinstance(d[_k], dict):
-                    d = d[_k]
+            if _k in dict_:
+                if isinstance(dict_[_k], dict):
+                    dict_ = dict_[_k]
                 else:
                     return False
             else:
-                d[_k] = dict()
-                d = d[_k]
+                dict_[_k] = dict()
+                dict_ = dict_[_k]
         key = key[-1]
     if append:
-        if not key in d:
-            d[key] = [value]
-        if isinstance(d[key], list):
-            d[key].append(value)
+        if not key in dict_:
+            dict_[key] = [value]
+        if isinstance(dict_[key], list):
+            dict_[key].append(value)
         else:
             return False
     else:
-        d[key] = value
+        dict_[key] = value
     return True
 
 
@@ -71,8 +71,11 @@ def _make_dir(*args):
     the one-liner directory creator
     """
     path = os.path.join(*[arg.strip(" ") for arg in args])
-    if not os.path.exists(path):
-        os.makedirs(path)
+    if not os.path.isdir(path):
+        from random import random
+        time.sleep(random()*0.001)
+        if not os.path.isdir(path):
+            os.makedirs(path)
     return path
 
 
@@ -99,8 +102,10 @@ def _load_json(filename):
     """
     the one-liner json loader
     """
-    with open(filename, 'r') as f:
-        result = json.load(f)
+    if not isinstance(filename, str):
+        return None
+    with open(filename, 'r') as file_:
+        result = json.load(file_)
     return result
 
 
@@ -108,8 +113,10 @@ def _save_json(to_be_saved, filename):
     """
     the one-liner json saver
     """
-    with open(filename, 'w') as f:
-        json.dump(to_be_saved, f)
+    if not isinstance(filename, str):
+        return
+    with open(filename, 'w') as file_:
+        json.dump(to_be_saved, file_)
 
 
 def _list_to_string(float_list, decimal_count=3, with_bracket=True):

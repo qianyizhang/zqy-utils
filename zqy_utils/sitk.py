@@ -3,9 +3,11 @@
 """
 the SimpleITK related functionalities
 """
-import SimpleITK as sitk
 import os.path as osp
+
 import numpy as np
+import SimpleITK as sitk
+
 DEFAULT_DICOM_TAG = {"patientID": "0010|0020",
                      "studyUID": "0020|000d",
                      "seriesUID": "0020|000e",
@@ -28,7 +30,7 @@ DEFAULT_DICOM_TAG = {"patientID": "0010|0020",
 
 def get_image_info(
         img_path,
-        info=dict()):
+        info=None):
     """
     read dicom tags and return their values as dict
     args:
@@ -38,7 +40,8 @@ def get_image_info(
         info_dict:  the dicom tag values, default is 'None'
     """
     parsing_tags = DEFAULT_DICOM_TAG.copy()
-    parsing_tags.update(info)
+    if info is not None:
+        parsing_tags.update(info)
     info_dict = {tag: None for tag in parsing_tags}
     if isinstance(img_path, sitk.Image):
         img_itk = img_path
