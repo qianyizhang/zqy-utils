@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 '''
 zqy's utility functions
 '''
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 __short_description__ = "zqy's utility functions."
 __license__ = "MIT"
 __author__ = "qianyizhang"
@@ -16,6 +16,8 @@ __github_username__ = "qianyizhang"
 __github_url__ = "https://github.com/qianyizhang/zqy_utils"
 __support__ = "https://github.com/qianyizhang/zqy_utils/issues"
 
+from . import common
+from . import sitk
 
 if __name__ == '__main__':
     pass
