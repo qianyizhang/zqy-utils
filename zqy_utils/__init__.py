@@ -1,0 +1,21 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
+'''
+zqy's utility functions
+'''
+__version__ = "0.1.0"
+__short_description__ = "zqy's utility functions."
+__license__ = "MIT"
+__author__ = "qianyizhang"
+__author_email__ = "landy123007@hotmail.com"
+__maintainer__ = "qianyizhang"
+__maintainer_email__ = "landy123007@hotmail.com"
+__github_username__ = "qianyizhang"
+__github_url__ = "https://github.com/qianyizhang/zqy_utils"
+__support__ = "https://github.com/qianyizhang/zqy_utils/issues"
+
+
+if __name__ == '__main__':
+    pass
