@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 the common functionalities
@@ -19,7 +18,9 @@ def get_value_from_dict_safe(dict_, key, default=None):
     return:
         value
     """
-    assert isinstance(dict_, dict), "only supports dict input, {} is given".format(type(dict_))
+    assert isinstance(dict_,
+                      dict), "only supports dict input, {} is given".format(
+                          type(dict_))
     if isinstance(key, list):
         for _k in key[:-1]:
             if _k in dict_ and isinstance(dict_[_k], dict):
@@ -42,7 +43,9 @@ def set_value_to_dict_safe(dict_, key, value, append=False):
     return:
         bool: if the value is succesfully set
     """
-    assert isinstance(dict_, dict), "only supports dict input, {} is given".format(type(dict_))
+    assert isinstance(dict_,
+                      dict), "only supports dict input, {} is given".format(
+                          type(dict_))
     if isinstance(key, list):
         for _k in key[:-1]:
             if _k in dict_:
@@ -55,7 +58,7 @@ def set_value_to_dict_safe(dict_, key, value, append=False):
                 dict_ = dict_[_k]
         key = key[-1]
     if append:
-        if not key in dict_:
+        if key not in dict_:
             dict_[key] = [value]
         if isinstance(dict_[key], list):
             dict_[key].append(value)
@@ -73,7 +76,7 @@ def _make_dir(*args):
     path = os.path.join(*[arg.strip(" ") for arg in args])
     if not os.path.isdir(path):
         from random import random
-        time.sleep(random()*0.001)
+        time.sleep(random() * 0.001)
         if not os.path.isdir(path):
             os.makedirs(path)
     return path
@@ -83,8 +86,10 @@ def _json_read_str(string):
     """
     the one-liner json string parser
     """
+
     def invalid_entry(value):
         return value is None or value == ""
+
     if invalid_entry(string):
         return {}
     if isinstance(string, (str)):
