@@ -16,8 +16,12 @@ __github_username__ = "qianyizhang"
 __github_url__ = "https://github.com/qianyizhang/zqy-utils"
 __support__ = "https://github.com/qianyizhang/zqy-utils/issues"
 
-from . import common
-from . import sitk
+from .debug import *    # noqa
+from .dicom import *    # noqa
+from .dict import *     # noqa
+from .io import *       # noqa
+from .json import *     # noqa
+from .point import *    # noqa
 
 if __name__ == '__main__':
     pass

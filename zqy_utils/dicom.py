@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-the SimpleITK related functionalities
+dicom related functionalities
 """
 import os.path as osp
-
 import numpy as np
 import SimpleITK as sitk
+
+__all__ = [
+    "sitk_read_image", "sitk_read_image_series", "get_image_info",
+    "get_image_np"
+]
 
 DEFAULT_DICOM_TAG = {
     "patientID": "0010|0020",
@@ -43,8 +47,8 @@ def get_image_info(img_path, info=None):
     """
     read dicom tags and return their values as dict
     args:
-        img_path:   the image path
-        info:       a dict where key is the return key, and value is tag position
+        img_path (str): the image path
+        info (dict{tag_name->tag_position})
     return:
         info_dict:  the dicom tag values, default is 'None'
     """
@@ -69,7 +73,7 @@ def get_image_info(img_path, info=None):
     return info_dict
 
 
-def get_image(img_path):
+def get_image_np(img_path):
     img_itk = sitk_read_image(img_path)
     if img_itk is None:
         return None
@@ -84,7 +88,7 @@ def sitk_read_image_series(image_series, uid=None, verbose=False):
     if isinstance(image_series, (list, set, tuple)):
         if not np.all([osp.exists(path) for path in image_series]):
             print(
-                "[WARNING] not all image paths supported in the series are existed"
+                "[WARNING] some images are missing"
             )
     elif isinstance(image_series, str):
         if not osp.isdir(image_series):
