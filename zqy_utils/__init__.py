@@ -22,6 +22,8 @@ from .dict import *     # noqa
 from .io import *       # noqa
 from .json import *     # noqa
 from .point import *    # noqa
+from .registry import * # noqa
+
 
 if __name__ == '__main__':
     pass
