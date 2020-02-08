@@ -3,7 +3,7 @@
 """
 modified from https://github.com/facebookresearch/fvcore/blob/master/fvcore/common/registry.py
 """
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 __all__ = ["Registry"]
 
 
@@ -75,6 +75,12 @@ class Registry(object):
         less forceful way of checking if something is already registered
         """
         return name in self._obj_map
+
+    def keys(self) -> Tuple[str]:
+        return tuple(self._obj_map.keys())
+
+    def values(self) -> Tuple[object]:
+        return tuple(self._obj_map.values())
 
     def __repr__(self) -> str:
         return f"<{self._name} Registry with {len(self._obj_map)} items>"

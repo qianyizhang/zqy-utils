@@ -20,7 +20,7 @@ from .debug import *    # noqa
 from .dicom import *    # noqa
 from .dict import *     # noqa
 from .io import *       # noqa
-from .json import *     # noqa
+from .plot import *     # noqa
 from .point import *    # noqa
 from .registry import * # noqa
 
