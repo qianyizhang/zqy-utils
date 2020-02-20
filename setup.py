@@ -49,7 +49,7 @@ if __name__ == "__main__":
     try:
         LONG_DESCRIPTION = open("README.md", "r").read().decode("utf-8")
     except Exception:
-        LONG_DESCRIPTION = "No long description!"
+        LONG_DESCRIPTION = "utilities lib used by zqy!"
 
     # Version number, VERY IMPORTANT!
     VERSION = package.__version__
