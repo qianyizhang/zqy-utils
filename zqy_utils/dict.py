@@ -3,7 +3,6 @@
 """
 the common functionalities
 """
-__all__ = ["get_value_from_dict_safe", "set_value_to_dict_safe"]
 
 
 def get_value_from_dict_safe(d, key, default=None):
@@ -62,3 +61,6 @@ def set_value_to_dict_safe(d, key, value, append=False):
     else:
         d[key] = value
     return True
+
+
+__all__ = [k for k in globals().keys() if not k.startswith("_")]

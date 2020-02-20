@@ -4,11 +4,11 @@ import json
 import os
 import os.path as osp
 import pickle
+import shutil
 import time
+from collections import Callable
 
 from .dicom import sitk, sitk_read_image
-
-__all__ = ["make_dir", "load", "save", "read_str"]
 
 PARSER_EXT_DICT = {"pickle": "pkl", "json": "json",
                    "torch": "pth", "sitk": ["dicom", "dcm"]}
@@ -68,7 +68,7 @@ def read_str(string, default_out=None):
     return out
 
 
-def load(filename, file_type="auto"):
+def load(filename, file_type="auto", **kwargs):
     """
     the one-liner loader
     Args:
@@ -85,15 +85,15 @@ def load(filename, file_type="auto"):
 
     if file_type == "json":
         with open(filename, "r") as f:
-            result = json.load(f)
+            result = json.load(f, **kwargs)
     elif file_type == "pickle":
         with open(filename, "rb") as f:
-            result = pickle.load(f)
+            result = pickle.load(f, **kwargs)
     elif file_type == "torch":
         import torch
         result = torch.load(filename, map_location=torch.device("cpu"))
     elif file_type == "sitk":
-        result = sitk_read_image(filename)
+        result = sitk_read_image(filename, **kwargs)
     elif file_type == "unknown":
         raise ValueError(f"Unknown ext {filename}")
     else:
@@ -132,3 +132,50 @@ def save(to_be_saved, filename, file_type="auto"):
         raise ValueError(f"Unknown ext {filename}")
     else:
         raise NotImplementedError(f"Unknown file_type {file_type}")
+
+
+def recursive_copy(src, dst, softlink=False, overwrite=True, filter_fn=None):
+    src_file_list = []
+
+    for root, dirs, files in os.walk(src):
+        for filename in files:
+            if isinstance(filter_fn, Callable) and not filter_fn(filename):
+                continue
+            relative_root = root.rpartition(src)[-1].lstrip("/ ")
+            src_file_list.append((relative_root, filename))
+
+    make_dir(dst)
+
+    dst_file_list = []
+    for root, dirs, files in os.walk(dst):
+        for filename in files:
+            relative_root = root.rpartition(src)[-1].lstrip("/ ")
+            dst_file_list.append((relative_root, filename))
+
+    for f in src_file_list:
+        if f in dst_file_list:
+            continue
+        relative_root = f[0]
+        make_dir(dst, relative_root)
+        src_path = osp.join(src, *f)
+        dst_path = osp.join(dst, *f)
+        if osp.exists(dst_path):
+            if overwrite:
+                if osp.islink(dst_path):
+                    if osp.isdir(dst_path):
+                        os.rmdir(dst_path)
+                    else:
+                        os.unlink(dst_path)
+                else:
+                    os.remove(dst_path)
+                print(f"{dst_path} exists, overwrite")
+            else:
+                print(f"{dst_path} exists, skip")
+                continue
+        if softlink:
+            os.symlink(src_path, dst_path)
+        else:
+            shutil.copyfile(src_path, dst_path)
+
+
+__all__ = [k for k in globals().keys() if not k.startswith("_")]

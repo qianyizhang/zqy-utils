@@ -6,10 +6,6 @@ import os.path as osp
 import numpy as np
 import SimpleITK as sitk
 
-__all__ = [
-    "sitk_read_image", "sitk_read_image_series", "get_image_info",
-    "get_image_np"
-]
 
 DEFAULT_DICOM_TAG = {
     "patientID": "0010|0020",
@@ -33,14 +29,16 @@ DEFAULT_DICOM_TAG = {
 }
 
 
-def sitk_read_image(img_path):
+def sitk_read_image(img_path, as_np=False):
     try:
-        img_itk = sitk.ReadImage(img_path)
+        img = sitk.ReadImage(img_path)
+        if as_np:
+            img = sitk.GetArrayFromImage(img)
     except Exception:
         print(f"[Error] unable to load img_path {img_path}, "
               "perhaps its not standard format")
         return None
-    return img_itk
+    return img
 
 
 def get_image_info(img_path, info=None):
@@ -73,13 +71,6 @@ def get_image_info(img_path, info=None):
     return info_dict
 
 
-def get_image_np(img_path):
-    img_itk = sitk_read_image(img_path)
-    if img_itk is None:
-        return None
-    return sitk.GetArrayFromImage(img_itk)
-
-
 def sitk_read_image_series(image_series, uid=None, verbose=False):
     """
     reading image series into a 3d image stack
@@ -109,3 +100,6 @@ def sitk_read_image_series(image_series, uid=None, verbose=False):
     except Exception:
         img_itk = None
     return img_itk
+
+
+__all__ = [k for k in globals().keys() if not k.startswith("_")]

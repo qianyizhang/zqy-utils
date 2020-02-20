@@ -4,7 +4,6 @@
 modified from https://github.com/facebookresearch/fvcore/blob/master/fvcore/common/registry.py
 """
 from typing import Dict, Optional, Tuple
-__all__ = ["Registry"]
 
 
 class Registry(object):
@@ -84,3 +83,6 @@ class Registry(object):
 
     def __repr__(self) -> str:
         return f"<{self._name} Registry with {len(self._obj_map)} items>"
+
+
+__all__ = [k for k in globals().keys() if not k.startswith("_")]

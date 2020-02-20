@@ -2,7 +2,6 @@
 
 import numpy as np
 import itertools
-__all__ = ["flat_nested_list", "get_bounding_box"]
 
 
 def flat_nested_list(nested_list):
@@ -32,3 +31,5 @@ def get_bounding_box(edge_list, dim=2):
         bounding_box = np.ones((2, dim), dtype=dtype) * -1
     return bounding_box
 
+
+__all__ = [k for k in globals().keys() if not k.startswith("_")]
