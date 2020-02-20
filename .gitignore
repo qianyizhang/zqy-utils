@@ -3,7 +3,6 @@
 *.egg
 *.egg-info
 *.pyc
-*.txt
 *.json
 *.cso
 *.nii
