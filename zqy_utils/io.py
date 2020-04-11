@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
 
+import gzip
 import json
 import os
 import os.path as osp
 import pickle
 import shutil
+import tarfile
 import time
 from collections import Callable
 
+import numpy as np
+from PIL import Image
+
 from .dicom import sitk, sitk_read_image
 
-PARSER_EXT_DICT = {"pickle": "pkl", "json": "json",
-                   "torch": "pth", "sitk": ["dicom", "dcm"]}
+PARSER_EXT_DICT = {"txt": "txt",
+                   "pickle": "pkl", "json": "json",
+                   "torch": "pth", "sitk": ["dicom", "dcm", "nii"],
+                   "image": ["png", "jpg", "jpeg", "bmp"]}
 
 
 def _inverse_dict(d):
@@ -83,7 +90,10 @@ def load(filename, file_type="auto", **kwargs):
         ext = filename.rpartition(".")[-1].lower()
         file_type = EXT_TO_PARSER_DICT.get(ext, "unknown")
 
-    if file_type == "json":
+    if file_type == "txt":
+        with open(filename, "r") as f:
+            result = f.readlines()
+    elif file_type == "json":
         with open(filename, "r") as f:
             result = json.load(f, **kwargs)
     elif file_type == "pickle":
@@ -94,6 +104,11 @@ def load(filename, file_type="auto", **kwargs):
         result = torch.load(filename, map_location=torch.device("cpu"))
     elif file_type == "sitk":
         result = sitk_read_image(filename, **kwargs)
+    elif file_type == "image":
+        result = Image.open(filename)
+        as_np = kwargs.get("as_np", False)
+        if as_np:
+            result = np.array(result)
     elif file_type == "unknown":
         raise ValueError(f"Unknown ext {filename}")
     else:
@@ -117,7 +132,10 @@ def save(to_be_saved, filename, file_type="auto"):
         ext = filename.rpartition(".")[-1]
         file_type = EXT_TO_PARSER_DICT.get(ext, "unknown")
 
-    if file_type == "json":
+    if file_type == "txt":
+        with open(filename, "w") as f:
+            f.write(to_be_saved)
+    elif file_type == "json":
         with open(filename, "w") as f:
             json.dump(to_be_saved, f)
     elif file_type == "pickle":
@@ -125,7 +143,7 @@ def save(to_be_saved, filename, file_type="auto"):
             pickle.dump(to_be_saved, f)
     elif file_type == "torch":
         import torch
-        torch.save(to_be_saved, f)
+        torch.save(to_be_saved, filename)
     elif file_type == "sitk":
         sitk.WriteImage(to_be_saved, filename)
     elif file_type == "unknown":
@@ -135,6 +153,15 @@ def save(to_be_saved, filename, file_type="auto"):
 
 
 def recursive_copy(src, dst, softlink=False, overwrite=True, filter_fn=None):
+    """
+    recursively update dst root files with src root files
+    Args:
+        src (str): source root path
+        dst (str): destination root path
+        softlink (bool): Default False, if True, using os.symlink instead of copy
+        overwrite (bool): Default True, if overwrite when file already exists
+        filter_fn (function): given basename of src path, return True/False
+    """
     src_file_list = []
 
     for root, dirs, files in os.walk(src):
@@ -176,6 +203,29 @@ def recursive_copy(src, dst, softlink=False, overwrite=True, filter_fn=None):
             os.symlink(src_path, dst_path)
         else:
             shutil.copyfile(src_path, dst_path)
+
+
+def unzip(src_path, dst_path):
+    """
+    the one-liner unzip function, currently support "gz" and "tgz"
+    """
+    if osp.isdir(dst_path):
+        filename = osp.basename(src_path).rpartition(".")[0]
+        dst_path = osp.join(dst_path, filename)
+
+    if src_path.endswith(".gz"):
+        with gzip.open(src_path, 'rb') as f_in:
+            with open(dst_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+    elif src_path.endswith(".tgz"):
+        with tarfile.open(src_path, "r:gz") as tar:
+            tar.extractall(path=dst_path)
+
+    else:
+        raise NotImplementedError(f"unrecognized zip format {src_path}")
+
+    return dst_path
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

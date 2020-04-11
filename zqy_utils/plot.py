@@ -42,7 +42,7 @@ def overlay_bboxes(image, boxes, colors, line_thickness=5):
     if image.shape[-1] == 1:
         image = image.repeat(3, -1)
 
-    # should be hxwx3
+    # image should be h *w* 3 now
 
     for box, color in zip(boxes, colors):
         box = box.round().astype(int)
@@ -51,6 +51,32 @@ def overlay_bboxes(image, boxes, colors, line_thickness=5):
         image = cv2.rectangle(image, tuple(top_left), tuple(bottom_right),
                               tuple(color), line_thickness)
     return image
+
+
+def get_img_rois(img,
+                 boxes,
+                 texts=None,
+                 padding=100,
+                 line_thickness=1,
+                 font_size=0.5,
+                 color=(255, 255, 255)):
+    rois = np.array(boxes).round().astype(int)
+    h, w = img.shape[:2]
+    imgs_list = []
+    if texts is None:
+        texts = [""] * len(rois)
+    for roi, text in zip(rois, texts):
+        x0, y0, x1, y1 = roi
+        x0, x1 = np.clip([x0 - padding, x1 + padding], 0, w)
+        y0, y1 = np.clip([y0 - padding, y1 + padding], 0, h)
+        new_img = img[y0:y1, x0:x1, :].copy()
+        if text:
+            cv2.putText(new_img, str(text), (padding, padding),
+                        cv2.FONT_HERSHEY_SIMPLEX, font_size, color,
+                        line_thickness)
+        imgs_list.append(new_img)
+
+    return imgs_list
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

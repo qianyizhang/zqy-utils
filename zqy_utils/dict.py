@@ -63,4 +63,33 @@ def set_value_to_dict_safe(d, key, value, append=False):
     return True
 
 
+def visualize_dict(d, indent="--", level=0):
+    """
+    print out the the dict strctures, unwraping list by 1-depth
+    """
+    prefix = indent * level
+    if prefix:
+        prefix = " |" + prefix
+    if isinstance(d, (list, tuple)):
+        print(prefix, f"[{type(d[0])} * {len(d)}]")
+        return
+    elif not isinstance(d, dict):
+        print(prefix, f"{type(d)}")
+        return
+
+    for k, v in d.items():
+        if isinstance(v, (dict, )):
+            print(prefix, k)
+            visualize_dict(v, indent=indent, level=level + 1)
+        elif isinstance(v, (list, tuple)):
+            print(prefix, k)
+            if isinstance(v[0], (dict, )):
+                for i in v:
+                    visualize_dict(i, indent=indent, level=level + 1)
+            else:
+                visualize_dict(v, indent=indent, level=level + 1)
+        else:
+            print(prefix, k, v)
+
+
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

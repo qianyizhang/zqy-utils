@@ -11,6 +11,7 @@ DEFAULT_DICOM_TAG = {
     "patientID": "0010|0020",
     "studyUID": "0020|000d",
     "seriesUID": "0020|000e",
+    "customUID": "0008|103e",
     "image_pixel_spacing": "0018|1164",
     "instance_number": "0020|0013",
     "manufacturer": "0008|0070",
@@ -100,6 +101,21 @@ def sitk_read_image_series(image_series, uid=None, verbose=False):
     except Exception:
         img_itk = None
     return img_itk
+
+
+def update_tags(img_path, update_dict):
+    """
+    update tags
+    Args:
+        img_path(str): path
+        update_dict(dict{tag_key: value})
+    """
+    img = sitk.ReadImage(img_path)
+    for key, value in update_dict.items():
+        if key in DEFAULT_DICOM_TAG:
+            key = DEFAULT_DICOM_TAG[key]
+        img.SetMetaData(key, value)
+    sitk.WriteImage(img, img_path)
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
