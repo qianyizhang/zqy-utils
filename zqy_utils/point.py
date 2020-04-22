@@ -98,23 +98,33 @@ def union_merge(merge_mat):
     return group_indices
 
 
-def get_pts_merge_mat(pts_list, ratio=0.25, criteria="min"):
+def get_pts_merge_mat(pts_list, pts_list2=None, ratio=0.25, criteria="min"):
     """
     get the merge_mat for points list
     Args:
         pts_list (list[np.ndarray]):
             each item in pts_list is an array of points
+        pts_list2 (list[np.ndarray]):
+            secondary list, if is not given, assuming it's self merge
     Return:
         merge_mat (N x N np.ndarray): binary mat
     """
-    N = len(pts_list)
-    merge_mat = np.ones((N, N))
-    for i in range(N):
+
+    if pts_list2 is None:
+        replicate = True
+        pts_list2 = pts_list
+    else:
+        replicate = False
+    M = len(pts_list)
+    N = len(pts_list2)
+
+    merge_mat = np.ones((M, N))
+    for i in range(M):
         for j in range(N):
-            if i >= j:
+            if i >= j and replicate:
                 merge_mat[i, j] = merge_mat[j, i]
                 continue
-            pts1, pts2 = pts_list[i], pts_list[j]
+            pts1, pts2 = pts_list[i], pts_list2[j]
             num1, num2 = len(pts1), len(pts2)
             # get shared pts
             pts_all = np.concatenate([pts1, pts2])
@@ -123,7 +133,11 @@ def get_pts_merge_mat(pts_list, ratio=0.25, criteria="min"):
             if criteria == "min":
                 divisor = min(num1, num2)
             elif criteria == "iou":
-                divident = num_union
+                divisor = num_union
+            elif criteria == "self":
+                divisor = num1
+            elif criteria == "ref":
+                divisor = num2
             else:
                 raise NotImplementedError(f"unkown criteria {criteria}")
             merge_mat[i, j] = divident * 1.0 / divisor
@@ -135,7 +149,7 @@ def get_rounded_pts(pts_list, index_range, stride=1.0, as_unique=False):
     given a list of points, cast them to int
     """
     start, end = index_range
-    assert end >= start, f"invalud index_range {index_range}"
+    assert end >= start, f"invalid index_range {index_range}"
     pts = np.array(pts_list)
     pts = (pts[start:end + 1] / stride).round() * stride
     pts = pts.astype(int)
