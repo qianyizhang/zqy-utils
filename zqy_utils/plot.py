@@ -3,7 +3,6 @@
 import cv2
 import numpy as np
 
-
 DEFAULT_PALETTE = [3**7 - 1, 2**7 - 1, 5**9 - 1]
 
 
@@ -55,21 +54,51 @@ def overlay_bboxes(image, boxes, colors, line_thickness=5):
 
 def get_img_rois(img,
                  boxes,
+                 masks=None,
                  texts=None,
                  padding=100,
                  line_thickness=1,
                  font_size=0.5,
                  color=(255, 255, 255)):
+    if not isinstance(img, np.ndarray):
+        img = np.array(img)
+    if len(img.shape) == 2:
+        img = img[..., None]
+    if img.shape[-1] == 1:
+        img = img.repeat(3, -1)
     rois = np.array(boxes).round().astype(int)
     h, w = img.shape[:2]
     imgs_list = []
+    if masks is None:
+        masks = [None] * len(rois)
     if texts is None:
         texts = [""] * len(rois)
-    for roi, text in zip(rois, texts):
+    img_info = np.iinfo(img.dtype)
+    for roi, mask, text in zip(rois, masks, texts):
         x0, y0, x1, y1 = roi
         x0, x1 = np.clip([x0 - padding, x1 + padding], 0, w)
         y0, y1 = np.clip([y0 - padding, y1 + padding], 0, h)
         new_img = img[y0:y1, x0:x1, :].copy()
+
+        if mask is not None:
+            new_img = new_img.astype(float)
+            mask = np.array(mask).squeeze()
+            if mask.shape == img.shape[:2]:
+                mask = mask[y0:y1, x0:x1, None] * color
+                new_img = new_img + mask
+            else:
+                mask = cv2.resize(mask,
+                                  (roi[2] + 1 - roi[0], roi[3] + 1 - roi[1]))
+                mask = mask[..., None] * color
+                mx0, mx1 = roi[0] - x0, roi[2] + 1 - x0
+                ix0, ix1 = np.clip([mx0, mx1], 0, x1 - x0)
+                my0, my1 = roi[1] - y0, roi[3] + 1 - y0
+                iy0, iy1 = np.clip([my0, my1], 0, y1 - y0)
+                new_img[iy0:iy1, ix0:ix1] += mask[(iy0 - my0):(iy1 - my0),
+                                                  (ix0 - mx0):(ix1 - mx0)]
+            new_img = new_img.clip(img_info.min,
+                                   img_info.max).astype(img.dtype)
+
         if text:
             cv2.putText(new_img, str(text), (padding, padding),
                         cv2.FONT_HERSHEY_SIMPLEX, font_size, color,
