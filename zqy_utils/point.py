@@ -33,39 +33,61 @@ def get_bounding_box(edge_list, dim=2):
     return bounding_box
 
 
-def psf(pts, kernel=0):
+def psf(pts, kernel=0, size=None, as_tuple=True):
     """
     point spread function
     Args:
-        pts (list[float]): K-dim point
+        pts (list[float]): N points with K dim
         kenerl (int) : 0 = center, 1=8 points, 2=27 points
+        size (img.size): K int
+        as_tuple (bool): if output as tuple
     Return:
-        pts_list (tuple(1d array)): K array with N points
+        pts_list:
+            if as_tuple=True: (array, ) x K
+            if as_tuple=False: N x K array
 
     Note: the N points count is using 3-d input as reference.
     """
-    if kernel == 0:
+    if kernel == 1:
+        pts = np.array(pts).astype(int)
+    else:
         pts = np.array(pts).round().astype(int)
-    elif kernel == 1:
-        dim_list = [(int(pt), int(pt+1)) for pt in pts]
-        pts = np.meshgrid(*tuple(dim_list))
-    elif kernel == 2:
-        neighbor_pts = np.meshgrid(*[(-1, 0, 1)]*3)
-        pts = [(n+round(pt)).astype(int) for n, pt in zip(neighbor_pts, pts)]
-    return tuple(pts)
+
+    if len(pts.shape) == 1:
+        # dim -> 1 x dim
+        pts = pts[None]
+
+    if kernel > 0:
+        dim = pts.shape[-1]
+        if kernel == 1:
+            neighbor_pts = np.stack(np.meshgrid(
+                *[(0, 1)] * dim)).reshape(dim, -1)
+        elif kernel == 2:
+            neighbor_pts = np.stack(np.meshgrid(
+                *[(-1, 0, 1)] * dim)).reshape(dim, -1)
+        # N x dim x 1 + dim x 27 -> N x dim x 27
+        pts = pts[..., None] + neighbor_pts
+        # N x dim x 27 -> N*27 x dim
+        pts = pts.transpose(0, 2, 1).reshape(-1, dim)
+
+        size = None if size is None else np.array(size) - 1
+        pts = pts.clip(0, size)
+
+    if as_tuple:
+        pts = tuple(pts.T)
+    return pts
 
 
 def _test_psf():
-    volume = np.zeros((10, 10, 10))
-    pt = np.random.random(3)
-    pt = pt + [3, 4, 5]
-
-    volume[psf(pt, 0)] = 1
-    assert volume.sum() == 1
-    volume[psf(pt, 1)] = 2
-    assert volume.sum() == 2 * 8
-    volume[psf(pt, 2)] = 3
-    assert volume.sum() == 3 * 27
+    import boxx
+    s = 10
+    size = (s, s, s)
+    pts_list = [(i, i, i) for i in range(s)]
+    for kernel in range(3):
+        img = np.zeros(size)
+        pts = psf(pts_list, 0, size=size, as_tuple=True)
+        img[pts] = 1
+        boxx.show(img)
 
 
 def union_merge(merge_mat):
@@ -98,6 +120,12 @@ def union_merge(merge_mat):
     return group_indices
 
 
+def get_num_union(pts1, pts2):
+    pts_all = np.concatenate([pts1, pts2])
+    num_union = len(np.unique(pts_all, axis=0))
+    return num_union
+
+
 def get_pts_merge_mat(pts_list, pts_list2=None, ratio=0.25, criteria="min"):
     """
     get the merge_mat for points list
@@ -127,8 +155,7 @@ def get_pts_merge_mat(pts_list, pts_list2=None, ratio=0.25, criteria="min"):
             pts1, pts2 = pts_list[i], pts_list2[j]
             num1, num2 = len(pts1), len(pts2)
             # get shared pts
-            pts_all = np.concatenate([pts1, pts2])
-            num_union = len(np.unique(pts_all, axis=0))
+            num_union = get_num_union(pts1, pts2)
             divident = num1 + num2 - num_union
             if criteria == "min":
                 divisor = min(num1, num2)
@@ -144,11 +171,14 @@ def get_pts_merge_mat(pts_list, pts_list2=None, ratio=0.25, criteria="min"):
     return merge_mat > ratio
 
 
-def get_rounded_pts(pts_list, index_range, stride=1.0, as_unique=False):
+def get_rounded_pts(pts_list, index_range=(0, None), stride=1.0,
+                    as_unique=False):
     """
     given a list of points, cast them to int
     """
     start, end = index_range
+    if end is None:
+        end = len(pts_list) - 1
     assert end >= start, f"invalid index_range {index_range}"
     pts = np.array(pts_list)
     pts = (pts[start:end + 1] / stride).round() * stride
