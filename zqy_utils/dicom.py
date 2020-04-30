@@ -42,7 +42,7 @@ def sitk_read_image(img_path, as_np=False):
     return img
 
 
-def get_image_info(img_path, info=None):
+def get_image_info_from_image(img_itk, info=None):
     """
     read dicom tags and return their values as dict
     args:
@@ -55,19 +55,32 @@ def get_image_info(img_path, info=None):
     if info is not None:
         parsing_tags.update(info)
     info_dict = {tag: None for tag in parsing_tags}
-    if isinstance(img_path, sitk.Image):
-        img_itk = img_path
-    elif isinstance(img_path, str):
-        if not osp.exists(img_path):
-            print("[Error]image_path does not exist")
-            return info_dict
-        img_itk = sitk_read_image(img_path)
-        if img_itk is None:
-            return info_dict
+    assert isinstance(img_itk, sitk.Image), "only supports itk image as input"
     for tag, meta_key in parsing_tags.items():
         try:
             info_dict[tag] = img_itk.GetMetaData(meta_key).strip(" \n")
         except Exception:
+            info_dict[tag] = None
+    return info_dict
+
+
+def get_image_info(img_path, info=None):
+    parsing_tags = DEFAULT_DICOM_TAG.copy()
+    if info is not None:
+        parsing_tags.update(info)
+    info_dict = {tag: None for tag in parsing_tags}
+
+    if isinstance(img_path, sitk.Image):
+        return get_image_info_from_image(img_path, info)
+    reader = sitk.ImageFileReader()
+    reader.SetFileName(img_path)
+    reader.LoadPrivateTagsOn()
+    reader.ReadImageInformation()
+    all_keys = reader.GetMetaDataKeys()
+    for tag, meta_key in parsing_tags.items():
+        if meta_key in all_keys:
+            info_dict[tag] = reader.GetMetaData(meta_key).strip(" \n")
+        else:
             info_dict[tag] = None
     return info_dict
 

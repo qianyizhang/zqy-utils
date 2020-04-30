@@ -46,7 +46,7 @@ def psf(pts, kernel=0, size=None, as_tuple=True):
             if as_tuple=True: (array, ) x K
             if as_tuple=False: N x K array
 
-    Note: the N points count is using 3-d input as reference.
+    Note: the kernel points count is using 3-d input as reference.
     """
     if kernel == 1:
         pts = np.array(pts).astype(int)
@@ -60,13 +60,11 @@ def psf(pts, kernel=0, size=None, as_tuple=True):
     if kernel > 0:
         dim = pts.shape[-1]
         if kernel == 1:
-            neighbor_pts = np.stack(np.meshgrid(
-                *[(0, 1)] * dim)).reshape(dim, -1)
+            neighbor_pts = np.stack(np.meshgrid(*[(0, 1)] * dim))
         elif kernel == 2:
-            neighbor_pts = np.stack(np.meshgrid(
-                *[(-1, 0, 1)] * dim)).reshape(dim, -1)
+            neighbor_pts = np.stack(np.meshgrid(*[(-1, 0, 1)] * dim))
         # N x dim x 1 + dim x 27 -> N x dim x 27
-        pts = pts[..., None] + neighbor_pts
+        pts = pts[..., None] + neighbor_pts.reshape(dim, -1)
         # N x dim x 27 -> N*27 x dim
         pts = pts.transpose(0, 2, 1).reshape(-1, dim)
 
@@ -85,7 +83,7 @@ def _test_psf():
     pts_list = [(i, i, i) for i in range(s)]
     for kernel in range(3):
         img = np.zeros(size)
-        pts = psf(pts_list, 0, size=size, as_tuple=True)
+        pts = psf(pts_list, kernel, size=size, as_tuple=True)
         img[pts] = 1
         boxx.show(img)
 
