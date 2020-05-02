@@ -17,7 +17,7 @@ from .dicom import sitk, sitk_read_image
 
 PARSER_EXT_DICT = {"txt": "txt",
                    "pickle": "pkl", "json": "json",
-                   "torch": "pth", "sitk": ["dicom", "dcm", "nii"],
+                   "torch": "pth", "sitk": ["dicom", "dcm", "nii", "nii.gz"],
                    "image": ["png", "jpg", "jpeg", "bmp"]}
 
 
@@ -86,9 +86,20 @@ def load(filename, file_type="auto", **kwargs):
     if not isinstance(filename, str):
         return None
 
+    if not osp.exists(filename):
+        raise ValueError(f"file does not exist {filename}")
+
     if file_type == "auto":
-        ext = filename.rpartition(".")[-1].lower()
-        file_type = EXT_TO_PARSER_DICT.get(ext, "unknown")
+        # check ext reversely
+        # eg: a.b.c.d -> ["d", "c.d", "b.c.d", "a.b.c.d"]
+        ext = ""
+        for token in filename.lower().split(".")[::-1]:
+            ext = f"{token}.{ext}".strip(".")
+            if ext in EXT_TO_PARSER_DICT:
+                file_type = EXT_TO_PARSER_DICT[ext]
+                break
+        else:
+            file_type = "unknown"
 
     if file_type == "txt":
         with open(filename, "r") as f:
