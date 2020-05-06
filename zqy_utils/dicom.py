@@ -6,7 +6,6 @@ import os.path as osp
 import numpy as np
 import SimpleITK as sitk
 
-
 DEFAULT_DICOM_TAG = {
     "patientID": "0010|0020",
     "studyUID": "0020|000d",
@@ -30,7 +29,31 @@ DEFAULT_DICOM_TAG = {
 }
 
 
+def is_valid_file(filename, verbose=True):
+    """
+    given filename, check if it's valid
+    """
+    if not isinstance(filename, str):
+        if verbose:
+            print(f"{filename} is not string")
+        return False
+
+    if not osp.exists(filename):
+        if verbose:
+            print(f"{filename} does not exist")
+        return False
+
+    if not osp.isfile(filename):
+        if verbose:
+            print(f"{filename} exists, but is not file")
+        return False
+
+    return True
+
+
 def sitk_read_image(img_path, as_np=False):
+    if not is_valid_file(img_path):
+        return None
     try:
         img = sitk.ReadImage(img_path)
         if as_np:
@@ -46,7 +69,7 @@ def get_image_info_from_image(img_itk, info=None):
     """
     read dicom tags and return their values as dict
     args:
-        img_path (str): the image path
+        img_itk (sitk.Image): the itk image
         info (dict{tag_name->tag_position})
     return:
         info_dict:  the dicom tag values, default is 'None'
@@ -65,13 +88,16 @@ def get_image_info_from_image(img_itk, info=None):
 
 
 def get_image_info(img_path, info=None):
+    if isinstance(img_path, sitk.Image):
+        return get_image_info_from_image(img_path, info)
+
     parsing_tags = DEFAULT_DICOM_TAG.copy()
     if info is not None:
         parsing_tags.update(info)
     info_dict = {tag: None for tag in parsing_tags}
+    if not is_valid_file(img_path):
+        return info_dict
 
-    if isinstance(img_path, sitk.Image):
-        return get_image_info_from_image(img_path, info)
     reader = sitk.ImageFileReader()
     reader.SetFileName(img_path)
     reader.LoadPrivateTagsOn()

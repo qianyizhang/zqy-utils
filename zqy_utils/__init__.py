@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 '''
 zqy's utility functions
 '''
-__version__ = "0.1.7"
+__version__ = "0.1.9"
 __short_description__ = "zqy's utility functions."
 __license__ = "MIT"
 __author__ = "qianyizhang"

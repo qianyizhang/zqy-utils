@@ -13,7 +13,7 @@ from collections import Callable
 import numpy as np
 from PIL import Image
 
-from .dicom import sitk, sitk_read_image
+from .dicom import sitk, sitk_read_image, is_valid_file
 
 PARSER_EXT_DICT = {"txt": "txt",
                    "pickle": "pkl", "json": "json",
@@ -83,11 +83,8 @@ def load(filename, file_type="auto", **kwargs):
         file_type (str): support types: PARSER_EXT_DICT
     """
 
-    if not isinstance(filename, str):
+    if not is_valid_file(filename):
         return None
-
-    if not osp.exists(filename):
-        raise ValueError(f"file does not exist {filename}")
 
     if file_type == "auto":
         # check ext reversely
