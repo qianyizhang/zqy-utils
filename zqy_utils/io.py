@@ -16,9 +16,12 @@ from PIL import Image
 from .dicom import sitk, sitk_read_image, is_valid_file
 
 PARSER_EXT_DICT = {"txt": "txt",
-                   "pickle": "pkl", "json": "json",
-                   "torch": "pth", "sitk": ["dicom", "dcm", "nii", "nii.gz"],
-                   "image": ["png", "jpg", "jpeg", "bmp"]}
+                   "pickle": "pkl",
+                   "json": "json",
+                   "torch": "pth",
+                   "sitk": ["dicom", "dcm", "nii", "nii.gz"],
+                   "image": ["png", "jpg", "jpeg", "bmp"],
+                   "numpy": ["npy", "npz"]}
 
 
 def _inverse_dict(d):
@@ -117,6 +120,23 @@ def load(filename, file_type="auto", **kwargs):
         as_np = kwargs.get("as_np", False)
         if as_np:
             result = np.array(result)
+    elif file_type == "numpy":
+        o = np.load(filename, allow_pickle=kwargs.get("allow_pickle", False))
+        if kwargs.get("lazy", False):
+            # if its lazy loading, simply return the object
+            return o
+        if len(o.files) == 1:
+            # if only 1 array, return as it is
+            return o.get(o.files[0])
+        else:
+            # asuming is multiple array and load sequentially
+            result = {}
+            for k in o.files:
+                v = o.get(f)
+                if v.dtype == "O":
+                    v = v.item()
+                result[k] = v
+            return result
     elif file_type == "unknown":
         raise ValueError(f"Unknown ext {filename}")
     else:
@@ -125,7 +145,7 @@ def load(filename, file_type="auto", **kwargs):
     return result
 
 
-def save(to_be_saved, filename, file_type="auto"):
+def save(to_be_saved, filename, file_type="auto", **kwargs):
     """
     the one-liner saver
     Args:
@@ -154,6 +174,13 @@ def save(to_be_saved, filename, file_type="auto"):
         torch.save(to_be_saved, filename)
     elif file_type == "sitk":
         sitk.WriteImage(to_be_saved, filename)
+    elif file_type == "numpy":
+        saver = np.savez_compressed if kwargs.get(
+            "compressed", False) else np.savez
+        if isinstance(to_be_saved, dict):
+            saver(filename, **to_be_saved)
+        else:
+            saver(filename, to_be_saved)
     elif file_type == "unknown":
         raise ValueError(f"Unknown ext {filename}")
     else:
