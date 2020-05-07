@@ -23,6 +23,7 @@ from .io import *       # noqa
 from .plot import *     # noqa
 from .point import *    # noqa
 from .registry import * # noqa
+from .print import *    # noqa
 
 
 if __name__ == '__main__':
