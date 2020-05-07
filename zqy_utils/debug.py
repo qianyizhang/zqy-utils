@@ -84,15 +84,18 @@ class TimeCounter(object):
     def get_keys(self):
         return self.clocks.keys()
 
-    def get_str(self, mode="mean"):
+    def get_str(self, mode="mean", deliminator="\n", with_runs=True):
         def _str(name):
             times = self.get_time(name, mode=mode)
-            count = self.get_time(name, mode="count")
-            return f"[{name}] {times:.3f}s / {count} runs"
-        return "\n".join([_str(name) for name in self.clocks])
+            if with_runs:
+                count = self.get_time(name, mode="count")
+                return f"[{name}] {times:.3f}s / {count} runs"
+            else:
+                return f"[{name}] {times:.3f}s"
+        return deliminator.join([_str(name) for name in self.clocks])
 
     def __repr__(self):
-        return self.get_str(mode="mean")
+        return self.get_str(mode="mean", deliminator="\n", with_runs=True)
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
