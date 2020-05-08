@@ -23,10 +23,10 @@ def search_dir(module, key=""):
 
 
 class TimeCounter(object):
-    def __init__(self, sync=False, print_toc=False):
+    def __init__(self, sync=False, verbose=False):
         self.clocks = OrderedDict()
         self.sync = sync
-        self.print_toc = print_toc
+        self.verbose = verbose
         self._last_name = None
 
     def tic(self, name):
@@ -43,7 +43,7 @@ class TimeCounter(object):
             sync_cuda()
         if name in self.clocks:
             time_spend = time.time() - self.clocks[name]["last_clock"]
-            if self.print_toc:
+            if self.verbose:
                 print(f"[{name}] {time_spend:.3f}s")
             self.clocks[name]["times"].append(time_spend)
 
@@ -96,7 +96,8 @@ class TimeCounter(object):
     def __repr__(self):
         for name, info in self.clocks.items():
             if len(info["times"]) == 0:
-                print(f"toc on [{name}] for closure")
+                if self.verbose:
+                    print(f"toc on [{name}] for closure")
                 self.toc(name)
         return self.get_str(mode="mean", deliminator=" | ", with_runs=True)
 
