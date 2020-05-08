@@ -132,7 +132,7 @@ def load(filename, file_type="auto", **kwargs):
             # asuming is multiple array and load sequentially
             result = {}
             for k in o.files:
-                v = o.get(f)
+                v = o.get(k)
                 if v.dtype == "O":
                     v = v.item()
                 result[k] = v

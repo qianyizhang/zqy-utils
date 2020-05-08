@@ -53,6 +53,9 @@ def psf(pts, kernel=0, size=None, as_tuple=True):
     else:
         pts = np.array(pts).round().astype(int)
 
+    if pts.size == 0:
+        return pts
+
     if len(pts.shape) == 1:
         # dim -> 1 x dim
         pts = pts[None]

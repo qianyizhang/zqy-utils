@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
 '''
 zqy's utility functions
 '''
-__version__ = "0.1.9"
+from __future__ import unicode_literals
+
+from .debug import *  # noqa
+from .dicom import *  # noqa
+from .dict import *  # noqa
+from .io import *  # noqa
+from .plot import *  # noqa
+from .point import *  # noqa
+from .print import *  # noqa
+from .registry import *  # noqa
+from .virtual_data import *  # noqa
+
+__version__ = "0.1.10
 __short_description__ = "zqy's utility functions."
 __license__ = "MIT"
 __author__ = "qianyizhang"
@@ -16,14 +25,7 @@ __github_username__ = "qianyizhang"
 __github_url__ = "https://github.com/qianyizhang/zqy-utils"
 __support__ = "https://github.com/qianyizhang/zqy-utils/issues"
 
-from .debug import *    # noqa
-from .dicom import *    # noqa
-from .dict import *     # noqa
-from .io import *       # noqa
-from .plot import *     # noqa
-from .point import *    # noqa
-from .registry import * # noqa
-from .print import *    # noqa
+
 
 
 if __name__ == '__main__':
