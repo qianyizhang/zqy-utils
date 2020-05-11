@@ -263,4 +263,14 @@ def unzip(src_path, dst_path):
     return dst_path
 
 
+def get_folder_size(path):
+    """
+    credit to:
+    https://stackoverflow.com/questions/1392413/calculating-a-directorys-size-using-python/1392549#1392549
+    """
+    nbytes = sum(osp.getsize(f)
+                 for f in os.listdir(path) if osp.isfile(f))
+    return nbytes
+
+
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
