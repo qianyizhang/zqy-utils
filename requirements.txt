@@ -2,3 +2,4 @@ opencv-python
 numpy
 SimpleITK
 scikit-learn
+psutil
