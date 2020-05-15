@@ -4,6 +4,7 @@ zqy's utility functions
 '''
 from __future__ import unicode_literals
 
+from .collect_env_info import *  # noqa
 from .debug import *  # noqa
 from .dicom import *  # noqa
 from .dict import *  # noqa
@@ -12,6 +13,7 @@ from .plot import *  # noqa
 from .point import *  # noqa
 from .print import *  # noqa
 from .registry import *  # noqa
+
 # from .virtual_data import *  # noqa
 
 __version__ = "0.1.10"
@@ -24,8 +26,6 @@ __maintainer_email__ = "landy123007@hotmail.com"
 __github_username__ = "qianyizhang"
 __github_url__ = "https://github.com/qianyizhang/zqy-utils"
 __support__ = "https://github.com/qianyizhang/zqy-utils/issues"
-
-
 
 
 if __name__ == '__main__':
