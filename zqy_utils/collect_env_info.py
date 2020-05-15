@@ -28,7 +28,6 @@ def collect_torch_env():
 
 def collect_env_info():
     import torch
-    import torchvision
     data = []
     data.append(("sys.platform", sys.platform))
     data.append(("Python", sys.version.replace("\n", "")))
@@ -38,8 +37,9 @@ def collect_env_info():
     data.append(("PyTorch", torch.__version__))
     data.append(("PyTorch Debug Build", torch.version.debug))
     try:
+        import torchvision
         data.append(("torchvision", torchvision.__version__))
-    except AttributeError:
+    except Exception:
         data.append(("torchvision", "unknown"))
 
     has_cuda = torch.cuda.is_available()
@@ -76,8 +76,12 @@ def collect_env_info():
         data.append(("cv2", cv2.__version__))
     except ImportError:
         pass
-#     env_str = tabulate(data) + "\n"
-    env_str = ""
+    try:
+        import tabulate
+        env_str = tabulate(data) + "\n"
+    except ImportError:
+        pass
+        env_str = ""
     env_str += collect_torch_env()
     return env_str
 
