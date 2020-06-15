@@ -174,6 +174,11 @@ def save(to_be_saved, filename, file_type="auto", **kwargs):
         torch.save(to_be_saved, filename)
     elif file_type == "sitk":
         sitk.WriteImage(to_be_saved, filename)
+    elif file_type == "image":
+        if isinstance(to_be_saved, np.ndarray):
+            to_be_saved = Image.fromarray(to_be_saved)
+        assert isinstance(to_be_saved, Image.Image)
+        to_be_saved.save(filename)
     elif file_type == "numpy":
         saver = np.savez_compressed if kwargs.get(
             "compressed", False) else np.savez
