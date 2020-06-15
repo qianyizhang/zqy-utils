@@ -9,7 +9,7 @@ def flat_nested_list(nested_list):
     return list(itertools.chain(*nested_list))
 
 
-def get_bounding_box(edge_list, dim=2):
+def get_bounding_box(edge_list, dim=2, verbose=False):
     """
     given a (nested) list of points, return its bounding box
     args:
@@ -26,9 +26,9 @@ def get_bounding_box(edge_list, dim=2):
         max_point = edge_list_np.max(axis=0)
         bounding_box = np.vstack((min_point, max_point))
     except Exception:
-        print(edge_list)
         dtype = edge_list_np.dtype
-        print(dtype)
+        if verbose:
+            print(edge_list_np, dtype)
         bounding_box = np.ones((2, dim), dtype=dtype) * -1
     return bounding_box
 
@@ -218,6 +218,24 @@ def _test_union_merge():
             valid = False
             break
     return valid
+
+
+def get_intersection_pts(pts1, pts2):
+    """
+    this is numpy version of [i for i in pts1 if i in pts2]
+    it does 'vector-wise' comparison
+    """
+    pts1 = np.array(pts1)
+    pts2 = np.array(pts2)
+    original = pts1
+    assert pts1.shape[1:] == pts2.shape[1:], "shape mismatch between inputs"
+    pts1 = np.ascontiguousarray(pts1.reshape(pts1.shape[0], -1))
+    dtype = [('f{i}'.format(i=i), pts1.dtype) for i in range(pts1.shape[1])]
+    c1 = pts1.view(dtype)   # c as consolidated
+    c2 = np.ascontiguousarray(pts2.reshape(pts2.shape[0], -1)).view(dtype)
+    indices = np.isin(c1, c2)
+    ret = original[indices.squeeze()]
+    return ret
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
