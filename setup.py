@@ -148,13 +148,18 @@ if __name__ == "__main__":
             if "#" in line:
                 line = line[:line.find("#")].strip()
             if line:
+                if line.startswith("opencv-python"):
+                    # in case of conda installed opencv
+                    try:
+                        import cv2
+                        continue
+                    except Exception:
+                        pass
                 REQUIRES.append(line)
     except Exception:
         print("'requirements.txt' not found!")
         REQUIRES = list()
-#    from boxx import *
-#    setup = dicto
-#    tree-setup(
+
     setup(
         name=PKG_NAME,
         description=SHORT_DESCRIPTION,
