@@ -92,4 +92,21 @@ def visualize_dict(d, indent="--", level=0):
             print(prefix, k, v)
 
 
+def recursive_update(default, custom):
+    """
+    https://github.com/Maples7/dict-recursive-update/blob/master/dict_recursive_update/__init__.py
+    """
+    if not isinstance(default, dict) or not isinstance(custom, dict):
+        raise TypeError('Params of recursive_update should be dicts')
+
+    for key in custom:
+        if isinstance(custom[key], dict) and isinstance(
+                default.get(key), dict):
+            default[key] = recursive_update(default[key], custom[key])
+        else:
+            default[key] = custom[key]
+
+    return default
+
+
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
