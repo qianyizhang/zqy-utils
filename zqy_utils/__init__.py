@@ -16,7 +16,7 @@ from .registry import *  # noqa
 
 # from .virtual_data import *  # noqa
 
-__version__ = "0.1.10"
+__version__ = "0.1.11"
 __short_description__ = "zqy's utility functions."
 __license__ = "MIT"
 __author__ = "qianyizhang"
