@@ -2,7 +2,6 @@
 modified from
 https://cvnote.ddlee.cn/2019/10/13/Collect-Environment-Info-Deep-Learning.html
 """
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import numpy as np
 import os
 import subprocess

@@ -13,7 +13,7 @@ from .plot import *  # noqa
 from .point import *  # noqa
 from .print import *  # noqa
 from .registry import *  # noqa
-
+from .vtk import *  # noqa
 # from .virtual_data import *  # noqa
 
 __version__ = "0.1.11"
