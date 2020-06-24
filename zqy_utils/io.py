@@ -122,6 +122,8 @@ def load(filename, file_type="auto", **kwargs):
             result = np.array(result)
     elif file_type == "numpy":
         o = np.load(filename, allow_pickle=kwargs.get("allow_pickle", False))
+        if isinstance(o, np.ndarray):
+            return o
         if kwargs.get("lazy", False):
             # if its lazy loading, simply return the object
             return o
