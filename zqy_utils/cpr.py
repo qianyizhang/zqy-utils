@@ -1,0 +1,149 @@
+
+import numbers
+from scipy.spatial.transform import Rotation as R
+import numpy as np
+
+
+def norm(vec):
+    v = np.linalg.norm(vec, axis=-1, keepdims=True)
+    v[v < 1e-9] = 1.0   # guard against 0 division
+    return vec / v
+
+
+def get_rotation_matrix(rot_axis, angle):
+    rot_axis = norm(rot_axis)
+    rad = np.deg2rad(angle)
+    r = R.from_rotvec(rad * rot_axis)
+    return r.as_dcm()
+
+
+def get_range(pts, vec, size):
+    """
+    given a series of points and a vector, finds its range such
+        all valid info are covered by pts + range* vec
+    """
+    intercepts = np.hstack([-pts / vec, (size - pts) / vec])
+    intercepts.sort(-1)
+    return min(intercepts[:, 2]), max(intercepts[:, 3])
+
+
+def project_to_plane(pts, plane_norm):
+    """
+    given a plane_norm, return porjected points to that plane
+    """
+    plane_norm = norm(plane_norm)
+    projected_pts = pts - pts.dot(plane_norm)[:, None]*plane_norm
+    return projected_pts
+
+
+def get_rotated_vec(rot_axis, angle, pivot_axis=(1, 0, 0)):
+    """
+    given a rotation axis, angle and pivot_axis, return the rotated vector
+    """
+    rot_axis = norm(rot_axis)
+    rot_mat = get_rotation_matrix(rot_axis, angle)
+
+    pivot_axis = norm(pivot_axis)
+    vec = norm(np.cross(pivot_axis, rot_axis))
+    rotated_vec = vec @ rot_mat
+    return rotated_vec
+
+
+def get_consistent_normals(pts, angle=0.0, pivot_axis=(1, 0, 0),
+                           return_binormals=False):
+    """
+    get a series of normals (and binormals) from a series of points
+    """
+    tangents = norm(pts[1:] - pts[:-1])
+    rot_axis = tangents[0]
+    n0 = get_rotated_vec(rot_axis, angle, norm(pivot_axis))
+    norm_list = [n0]
+    """
+    for t in tangents[1:]:
+        tmp = np.cross(n0, t)
+        n0 = np.cross(t, tmp)
+        norm_list.append(n0)
+    """
+
+    def calc_norm(t):
+        n0 = norm_list[-1]
+        tmp = np.cross(n0, t)
+        n0 = np.cross(t, tmp)
+        norm_list.append(n0)
+    # apparently, using np.vectorize is slightly faster?
+    np_calc_norm = np.vectorize(calc_norm, signature='(n)->()')
+    np_calc_norm(t=tangents[1:])
+
+    norms = norm(norm_list)
+    if not return_binormals:
+        return norms
+    binorms = np.cross(norms, tangents)
+    return norms, binorms
+
+
+def get_straight_cpr_grids(cl, angle, size=None,
+                           voxel_spacing=None, sample_spacing=0.0,
+                           width=40, as_torch=True):
+    """
+    get the sampling_grids for straight cpr
+    """
+    assert (not as_torch) or (size is not None), \
+        "have to set size when return as torch grid"
+    assert (sample_spacing == 0.0) or (voxel_spacing is not None), \
+        "have to set voxel_spacing when sample_spacing > 0.0"
+    if isinstance(angle, numbers.Number):
+        normals = get_consistent_normals(cl,
+                                         angle=angle,
+                                         return_binormals=False)
+        sum_rep = "w,hk->hwk"
+
+    else:
+        # assuming its a series of angles
+        n, bn = get_consistent_normals(cl, angle=0, return_binormals=True)
+        normals = [np.cos(np.deg2rad(a)) * n +
+                   np.sin(np.deg2rad(a)) * bn for a in angle]
+        sum_rep = "w,chk->chwk"
+
+    if sample_spacing > 0.0:
+        norm = np.linalg.norm(normals * np.array(voxel_spacing), axis=-1)
+        normals *= sample_spacing / norm[..., None]
+    grids = np.einsum(sum_rep, np.arange(-width, width + 1),
+                      normals) + cl[:-1, None]
+    if as_torch:
+        import torch
+        grids = torch.Tensor(grids / size * 2.0 - 1.0)
+        while grids.dim() < 5:
+            # 3d sampler is 5d, namely NCWHD
+            grids = grids[None]
+
+    return grids
+
+
+def double_reflection_method(pts, r0=(1, 0, 0)):
+    """
+    approximation of Rotation Minimizing Frames
+    https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/Computation-of-rotation-minimizing-frames.pdf
+    """
+    pts = np.array(pts)
+    r0 = norm(np.array(r0))
+    vecs = pts[1:] - pts[:-1]
+    t0 = vecs[0]
+    normals = [r0]
+    for index, v1 in enumerate(vecs[:-1]):
+        c1 = v1.dot(v1)
+        rL = r0 - (2/c1) * (v1.dot(r0)) * v1
+        tL = t0 - (2/c1) * (v1.dot(t0)) * v1
+        t1 = vecs[index+1]
+        v2 = t1 - tL
+        c2 = v2.dot(v2)
+        r1 = rL - (2/c2) * (v2.dot(rL)) * v2
+        normals.append(r1)
+        t0 = t1
+        r0 = r1
+
+    normals = norm(normals)
+    binormals = np.cross(vecs, normals)
+    return normals, binormals
+
+
+__all__ = [k for k in globals().keys() if not k.startswith("_")]

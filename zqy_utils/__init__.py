@@ -5,6 +5,7 @@ zqy's utility functions
 from __future__ import unicode_literals
 
 from .collect_env_info import *  # noqa
+from .cpr import *  # noqa
 from .debug import *  # noqa
 from .dicom import *  # noqa
 from .dict import *  # noqa
@@ -14,6 +15,7 @@ from .point import *  # noqa
 from .print import *  # noqa
 from .registry import *  # noqa
 from .vtk import *  # noqa
+
 # from .virtual_data import *  # noqa
 
 __version__ = "0.1.11"

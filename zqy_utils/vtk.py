@@ -1,12 +1,13 @@
 
-
 import lazy_import
+import numpy as np
+
 vtk = lazy_import.lazy_module("vtk")
 numpy_to_vtk = lazy_import.lazy_callable("vtk.util.numpy_support.numpy_to_vtk")
 vtk_to_numpy = lazy_import.lazy_callable("vtk.util.numpy_support.vtk_to_numpy")
 
 
-def np_to_polydata(pts, cells=None):
+def np_to_polydata(pts, cells=None, poly_type="Polys"):
     polyData = vtk.vtkPolyData()
     numberOfPoints = len(pts)
     points = vtk.vtkPoints()
@@ -26,9 +27,20 @@ def np_to_polydata(pts, cells=None):
             polys.InsertNextCell(len(indices))
             for ind in indices:
                 polys.InsertCellPoint(ind)
-        polyData.SetPolys(polys)
-
+        setter = getattr(polyData, f"Set{poly_type}")
+        setter(polys)
     return polyData
+
+
+def endpts_to_polyline(start, end, sampling_rate=1):
+    if sampling_rate > 1:
+        start = start[::sampling_rate]
+        end = end[::sampling_rate]
+    size = len(start)
+    poly_pts = np.vstack([start, end])
+    indices = np.vstack([np.arange(size), size+np.arange(size)]).T
+    poly = np_to_polydata(poly_pts, indices, "Lines")
+    return poly
 
 
 def np_to_points(np_mat):
@@ -38,6 +50,10 @@ def np_to_points(np_mat):
 
 
 def get_equal_length_pts(pts, sample_spacing, method="cardinal"):
+    """
+    given a series of points, return equal spacing sampled points
+    using vtk spline to approximate the parametric curve
+    """
     polyData = np_to_polydata(pts)
     spline = vtk.vtkSplineFilter()
     spline.SetInputDataObject(polyData)
