@@ -18,7 +18,7 @@ from .vtk import *  # noqa
 
 # from .virtual_data import *  # noqa
 
-__version__ = "0.1.11"
+__version__ = "0.2.0"
 __short_description__ = "zqy's utility functions."
 __license__ = "MIT"
 __author__ = "qianyizhang"

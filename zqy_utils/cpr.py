@@ -5,12 +5,18 @@ import numpy as np
 
 
 def norm(vec):
+    """
+    normalize the last dimension of a vector to unit 1.
+    """
     v = np.linalg.norm(vec, axis=-1, keepdims=True)
     v[v < 1e-9] = 1.0   # guard against 0 division
     return vec / v
 
 
 def get_rotation_matrix(rot_axis, angle):
+    """
+    get the rotation matrix for given axis + angle
+    """
     rot_axis = norm(rot_axis)
     rad = np.deg2rad(angle)
     r = R.from_rotvec(rad * rot_axis)
@@ -22,6 +28,8 @@ def get_range(pts, vec, size):
     given a series of points and a vector, finds its range such
         all valid info are covered by pts + range* vec
     """
+    vec[abs(vec) < 1e-9] = 1e-9
+    pts = np.array(pts)
     intercepts = np.hstack([-pts / vec, (size - pts) / vec])
     intercepts.sort(-1)
     return min(intercepts[:, 2]), max(intercepts[:, 3])
@@ -30,10 +38,18 @@ def get_range(pts, vec, size):
 def project_to_plane(pts, plane_norm):
     """
     given a plane_norm, return porjected points to that plane
+    Args:
+        pts (np.ndarray): Nx3 points
+        plane_norm (3d vector): the normal vector
+    Return:
+        projected_pts (np.ndarray): Nx3 projected points
+        distance (np.ndarray): N distance
+
     """
     plane_norm = norm(plane_norm)
-    projected_pts = pts - pts.dot(plane_norm)[:, None]*plane_norm
-    return projected_pts
+    distance = pts.dot(plane_norm)
+    projected_pts = pts - distance[:, None]*plane_norm
+    return projected_pts, distance
 
 
 def get_rotated_vec(rot_axis, angle, pivot_axis=(1, 0, 0)):
@@ -50,9 +66,17 @@ def get_rotated_vec(rot_axis, angle, pivot_axis=(1, 0, 0)):
 
 
 def get_consistent_normals(pts, angle=0.0, pivot_axis=(1, 0, 0),
-                           return_binormals=False):
+                           return_binormals=False, repeat_last=True):
     """
     get a series of normals (and binormals) from a series of points
+    Args:
+        pts (np.ndarray): Nx3 points
+        angle (float): Default = 0.0. rotated angle around anchor vector,
+            which is normal to rotation axis and pivot axis
+        pivot_axis (3d vector): Default = (1, 0, 0)
+        return_binormals (bool): Default = False
+        repeat_last (bool): Default = True. Repeat last vector so normals
+            (and binormals) have the same length as input points
     """
     tangents = norm(pts[1:] - pts[:-1])
     rot_axis = tangents[0]
@@ -75,17 +99,52 @@ def get_consistent_normals(pts, angle=0.0, pivot_axis=(1, 0, 0),
     np_calc_norm(t=tangents[1:])
 
     norms = norm(norm_list)
+    if repeat_last:
+        norms = np.vstack([norms, norms[-1]])
+        tangents = np.vstack([tangents, tangents[-1]])
     if not return_binormals:
         return norms
     binorms = np.cross(norms, tangents)
     return norms, binorms
 
 
-def get_straight_cpr_grids(cl, angle, size=None,
+def grids_to_torch(grids, size, dim=5):
+    """
+    convert np grids to torch.Tensor
+    """
+    import torch
+    grids = torch.Tensor(grids / size * 2.0 - 1.0)
+    while grids.dim() < dim:
+        # 3d sampler is 5d, namely NCWHD
+        grids = grids[None]
+    return grids
+
+
+def get_straight_cpr_grids(cl, angle, size=None, pivot_axis=(1, 0, 0),
                            voxel_spacing=None, sample_spacing=0.0,
                            width=40, as_torch=True):
     """
     get the sampling_grids for straight cpr
+    Args:
+        cl (np.ndarray): Nx3 centerline points
+        angle (float or [float]): rotated angle around anchor vector,
+            which is normal to rotation axis and pivot axis
+        size ([w, h, d]): size of image
+        pivot_axis (3d vector): Default = (1, 0, 0)
+        voxel_spacing (3d vector): spacing of image
+        sample_spacing (float): spacing for pixel width, as height
+            spacing is predetermined by centerline spacing.
+            Default = 0.0, which is sampled with unit vector
+        width (int): half width around centerline. Default = 40
+        as_torch (bool): Default = True. grid is scaled to [-1, 1],
+            thus can be applied to torch.nn.functional.grid_sample
+    Return:
+        grids (np.ndarry or torch.Tensor)
+
+    Note:
+        0. If sample_spacing is given, voxel_spacing must be set
+        1. If as_torch = True, size must be given.
+
     """
     assert (not as_torch) or (size is not None), \
         "have to set size when return as torch grid"
@@ -94,6 +153,7 @@ def get_straight_cpr_grids(cl, angle, size=None,
     if isinstance(angle, numbers.Number):
         normals = get_consistent_normals(cl,
                                          angle=angle,
+                                         pivot_axis=pivot_axis,
                                          return_binormals=False)
         sum_rep = "w,hk->hwk"
 
@@ -108,15 +168,43 @@ def get_straight_cpr_grids(cl, angle, size=None,
         norm = np.linalg.norm(normals * np.array(voxel_spacing), axis=-1)
         normals *= sample_spacing / norm[..., None]
     grids = np.einsum(sum_rep, np.arange(-width, width + 1),
-                      normals) + cl[:-1, None]
+                      normals) + cl[:, None]
     if as_torch:
-        import torch
-        grids = torch.Tensor(grids / size * 2.0 - 1.0)
-        while grids.dim() < 5:
-            # 3d sampler is 5d, namely NCWHD
-            grids = grids[None]
-
+        grids = grids_to_torch(grids, size)
     return grids
+
+
+def get_stretched_cpr_grids(cl, angle, size, rot_axis=None,
+                            pivot_axis=(1, 0, 0), voxel_spacing=None,
+                            sample_spacing=0.0, as_torch=True,
+                            return_pts2d=False):
+    """
+    get the sampling_grids for stretched cpr
+    """
+    assert (sample_spacing == 0.0) or (voxel_spacing is not None), \
+        "have to set voxel_spacing when sample_spacing > 0.0"
+    assert isinstance(angle, numbers.Number), "angle has to be float"
+
+    if rot_axis is None:
+        rot_axis = cl[-1] - cl[0]
+    vec = get_rotated_vec(rot_axis, angle, pivot_axis)
+    cl, distance = project_to_plane(cl, vec)
+    r = get_range(cl, vec, size)
+    end_pts = [cl + r[0] * vec, cl + r[1] * vec]
+    if sample_spacing > 0.0:
+        space_ratio = np.linalg.norm(vec * voxel_spacing) / sample_spacing
+    else:
+        space_ratio = 1.0
+    width = int((r[1] - r[0])*space_ratio) + 1
+
+    grids = np.linspace(*end_pts, width)
+    if as_torch:
+        grids = grids_to_torch(grids, size)
+    if not return_pts2d:
+        return grids
+    h = (distance - r[0])*space_ratio
+    pts2d = np.vstack([np.arange(len(h)), h]).T
+    return grids, pts2d
 
 
 def double_reflection_method(pts, r0=(1, 0, 0)):

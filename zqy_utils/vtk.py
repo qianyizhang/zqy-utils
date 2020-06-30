@@ -8,6 +8,9 @@ vtk_to_numpy = lazy_import.lazy_callable("vtk.util.numpy_support.vtk_to_numpy")
 
 
 def np_to_polydata(pts, cells=None, poly_type="Polys"):
+    """
+    convert np.points (+ faces) to vtk.polydata
+    """
     polyData = vtk.vtkPolyData()
     numberOfPoints = len(pts)
     points = vtk.vtkPoints()
@@ -33,6 +36,9 @@ def np_to_polydata(pts, cells=None, poly_type="Polys"):
 
 
 def endpts_to_polyline(start, end, sampling_rate=1):
+    """
+    convert np.points to bunch of vtk.lines
+    """
     if sampling_rate > 1:
         start = start[::sampling_rate]
         end = end[::sampling_rate]
@@ -44,6 +50,9 @@ def endpts_to_polyline(start, end, sampling_rate=1):
 
 
 def np_to_points(np_mat):
+    """
+    convert np.points to vtk.vtkPoints
+    """
     pts = vtk.vtkPoints()
     pts.SetData(numpy_to_vtk(np_mat))
     return pts
