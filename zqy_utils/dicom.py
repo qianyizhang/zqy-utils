@@ -111,7 +111,7 @@ def get_image_info(img_path, info=None):
     return info_dict
 
 
-def sitk_read_image_series(image_series, uid=None, verbose=False):
+def sitk_read_image_series(image_series, uid=None, verbose=False, as_np=False):
     """
     reading image series into a 3d image stack
     """
@@ -136,10 +136,12 @@ def sitk_read_image_series(image_series, uid=None, verbose=False):
         if verbose:
             print(image_series)
         reader.SetFileNames(image_series)
-        img_itk = reader.Execute()
+        img = reader.Execute()
+        if as_np:
+            img = sitk.GetArrayFromImage(img)
     except Exception:
-        img_itk = None
-    return img_itk
+        img = None
+    return img
 
 
 def update_tags(img_path, update_dict):
@@ -171,7 +173,7 @@ _SITK_INTERPOLATOR_DICT = {
 
 
 def resample_sitk_image(sitk_image, spacing=None, interpolator=None,
-                        fill_value=0):
+                        fill_value=0, as_np=False):
     # https://github.com/jonasteuwen/SimpleITK-examples/blob/master/examples/resample_isotropically.py
     """Resamples an ITK image to a new grid. If no spacing is given,
     the resampling is done isotropically to the smallest value in the current
@@ -234,17 +236,19 @@ def resample_sitk_image(sitk_image, spacing=None, interpolator=None,
 
     resample_filter = sitk.ResampleImageFilter()
 
-    resampled_sitk_image = resample_filter.Execute(sitk_image,
-                                                   new_size,
-                                                   sitk.Transform(),
-                                                   sitk_interpolator,
-                                                   orig_origin,
-                                                   new_spacing,
-                                                   orig_direction,
-                                                   fill_value,
-                                                   orig_pixelid)
+    img = resample_filter.Execute(sitk_image,
+                                  new_size,
+                                  sitk.Transform(),
+                                  sitk_interpolator,
+                                  orig_origin,
+                                  new_spacing,
+                                  orig_direction,
+                                  fill_value,
+                                  orig_pixelid)
+    if as_np:
+        img = sitk.GetArrayFromImage(img)
 
-    return resampled_sitk_image
+    return img
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

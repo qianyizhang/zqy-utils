@@ -180,6 +180,25 @@ def get_stretched_cpr_grids(cl, angle, size, rot_axis=None,
                             return_pts2d=False):
     """
     get the sampling_grids for stretched cpr
+    Args:
+        cl (np.ndarray): Nx3 centerline points
+        angle (float): rotated angle around anchor vector,
+            which is normal to rotation axis and pivot axis
+        size ([w, h, d]): size of image
+        rot_axis (3d vector or None): Default = None.
+            If not given, set to the end points of centerline
+        pivot_axis (3d vector): Default = (1, 0, 0)
+        voxel_spacing (3d vector): spacing of image
+        sample_spacing (float): spacing for pixel width, as height
+            spacing is predetermined by centerline spacing.
+            Default = 0.0, which is sampled with unit vector
+        as_torch (bool): Default = True. grid is scaled to [-1, 1],
+            thus can be applied to torch.nn.functional.grid_sample
+        return_pts2d (bool): Default = False.
+            Return the centerline position in 2d
+    Return:
+        grids (np.ndarry or torch.Tensor)
+        pts2d (np.ndarry): Nx2 centerline points
     """
     assert (sample_spacing == 0.0) or (voxel_spacing is not None), \
         "have to set voxel_spacing when sample_spacing > 0.0"

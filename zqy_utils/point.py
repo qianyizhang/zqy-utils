@@ -9,12 +9,13 @@ def flat_nested_list(nested_list):
     return list(itertools.chain(*nested_list))
 
 
-def get_bounding_box(edge_list, dim=2, verbose=False):
+def get_bounding_box(edge_list, dim=2, as_slice=False, verbose=False):
     """
     given a (nested) list of points, return its bounding box
     args:
         edge_list (list[points])
         dim (int): point dimension, default is 2
+        as_slice (bool): if True. Return tuple of slices.
         if the list is empty, all values are defaulted to -1
     return:
         bounding_box: (2d np.array with shape 2xdim): [top_left, bot_right]
@@ -24,12 +25,19 @@ def get_bounding_box(edge_list, dim=2, verbose=False):
         edge_list_np = edge_list_np.reshape(-1, dim)
         min_point = edge_list_np.min(axis=0)
         max_point = edge_list_np.max(axis=0)
-        bounding_box = np.vstack((min_point, max_point))
+        if as_slice:
+            bounding_box = tuple([slice(s0, s1)
+                                  for s0, s1 in zip(min_point, max_point)])
+        else:
+            bounding_box = np.vstack((min_point, max_point))
     except Exception:
         dtype = edge_list_np.dtype
         if verbose:
             print(edge_list_np, dtype)
-        bounding_box = np.ones((2, dim), dtype=dtype) * -1
+        if as_slice:
+            bounding_box = tuple([slice(0, 0) for _ in range(dim)])
+        else:
+            bounding_box = np.ones((2, dim), dtype=dtype) * -1
     return bounding_box
 
 
@@ -66,6 +74,8 @@ def psf(pts, kernel=0, size=None, as_tuple=True):
             neighbor_pts = np.stack(np.meshgrid(*[(0, 1)] * dim))
         elif kernel == 2:
             neighbor_pts = np.stack(np.meshgrid(*[(-1, 0, 1)] * dim))
+        else:
+            raise ValueError(f"kernel must be [0,1,2], {kernel} is given")
         # N x dim x 1 + dim x 27 -> N x dim x 27
         pts = pts[..., None] + neighbor_pts.reshape(dim, -1)
         # N x dim x 27 -> N*27 x dim
@@ -121,8 +131,11 @@ def union_merge(merge_mat):
     return group_indices
 
 
-def get_num_union(pts1, pts2):
-    pts_all = np.concatenate([pts1, pts2])
+def get_num_union(*pts):
+    """
+    given N list of points, return the number of their total unique points
+    """
+    pts_all = np.concatenate(pts)
     num_union = len(np.unique(pts_all, axis=0))
     return num_union
 

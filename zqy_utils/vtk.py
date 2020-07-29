@@ -3,8 +3,6 @@ import lazy_import
 import numpy as np
 
 vtk = lazy_import.lazy_module("vtk")
-numpy_to_vtk = lazy_import.lazy_callable("vtk.util.numpy_support.numpy_to_vtk")
-vtk_to_numpy = lazy_import.lazy_callable("vtk.util.numpy_support.vtk_to_numpy")
 
 
 def np_to_polydata(pts, cells=None, poly_type="Polys"):
@@ -54,7 +52,7 @@ def np_to_points(np_mat):
     convert np.points to vtk.vtkPoints
     """
     pts = vtk.vtkPoints()
-    pts.SetData(numpy_to_vtk(np_mat))
+    pts.SetData(vtk.util.numpy_support.numpy_to_vtk(np_mat))
     return pts
 
 
@@ -63,6 +61,7 @@ def get_equal_length_pts(pts, sample_spacing, method="cardinal"):
     given a series of points, return equal spacing sampled points
     using vtk spline to approximate the parametric curve
     """
+    from vtk.util.numpy_support import vtk_to_numpy
     polyData = np_to_polydata(pts)
     spline = vtk.vtkSplineFilter()
     spline.SetInputDataObject(polyData)
@@ -93,8 +92,36 @@ def get_parametric_pts(pts, linear=False, num_pts=-1, as_np=True):
         ret.SetUResolution(num_pts)
     ret.Update()
     if as_np:
+        from vtk.util.numpy_support import vtk_to_numpy
         return vtk_to_numpy(ret.GetOutput().GetPoints().GetData())
     return ret
+
+
+def write_mesh_to_ply(vertices, faces, filename="mesh.ply"):
+    headers = ["ply", "format ascii 1.0",
+               "comment author: zqy",
+               f"element vertex {len(vertices)}",
+               "property float x",
+               "property float y",
+               "property float z",
+               f"element face {len(faces)}",
+               "property list uchar int vertex_indices",
+               "end_header", ""]
+    vertex_list = [" ".join(map(str, pts)) for pts in vertices]
+    face_list = [" ".join(map(str, [len(inds)] + list(inds)))
+                 for inds in faces]
+    with open(filename, "w") as f:
+        f.write("\n".join(headers))
+        f.write("\n".join(vertex_list))
+        f.write("\n")
+        f.write("\n".join(face_list))
+
+
+def write_mesh_to_stl(poly_data, filename="mesh.stl"):
+    stlWriter = vtk.vtkSTLWriter()
+    stlWriter.SetFileName(filename)
+    stlWriter.SetInputData(poly_data)
+    stlWriter.Write()
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]
