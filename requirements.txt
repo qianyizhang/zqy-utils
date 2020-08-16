@@ -3,4 +3,4 @@ numpy
 SimpleITK
 scikit-learn
 psutil
-lazy_import
+# lazy_import

@@ -102,4 +102,5 @@ class TimeCounter(object):
         return self.get_str(mode="mean", deliminator=" | ", with_runs=True)
 
 
+g_timer = TimeCounter(verbose=True)
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

@@ -6,7 +6,7 @@ import numpy as np
 DEFAULT_PALETTE = [3**7 - 1, 2**7 - 1, 5**9 - 1]
 
 
-def get_colors(labels, palette=DEFAULT_PALETTE):
+def get_colors(labels, palette=DEFAULT_PALETTE, as_float=False):
     """
     Simple function convert label to color
     Args:
@@ -16,7 +16,12 @@ def get_colors(labels, palette=DEFAULT_PALETTE):
         return (2d np.array): N x 3, with dtype=uint8
     """
     colors = np.array(labels).reshape(-1, 1) * palette
-    colors = (colors % 255).astype("uint8")
+    colors = (colors % 255)
+    if as_float:
+        colors = 1
+    else:
+        colors = colors.astype("uint8")
+
     return colors
 
 

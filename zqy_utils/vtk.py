@@ -1,8 +1,14 @@
 
-import lazy_import
+from itertools import count
 import numpy as np
-
-vtk = lazy_import.lazy_module("vtk")
+try:
+    import vtk
+    VTK_SPLINE_DICT = {"cardinal": vtk.vtkCardinalSpline,
+                       "kochanek": vtk.vtkKochanekSpline,
+                       "linear": vtk.vtkSCurveSpline}
+except ImportError:
+    # it is not a core module
+    pass
 
 
 def np_to_polydata(pts, cells=None, poly_type="Polys"):
@@ -51,12 +57,13 @@ def np_to_points(np_mat):
     """
     convert np.points to vtk.vtkPoints
     """
+    from vtk.util.numpy_support import numpy_to_vtk
     pts = vtk.vtkPoints()
-    pts.SetData(vtk.util.numpy_support.numpy_to_vtk(np_mat))
+    pts.SetData(numpy_to_vtk(np_mat))
     return pts
 
 
-def get_equal_length_pts(pts, sample_spacing, method="cardinal"):
+def get_equal_length_pts(pts, sample_spacing, spline_name="cardinal"):
     """
     given a series of points, return equal spacing sampled points
     using vtk spline to approximate the parametric curve
@@ -65,12 +72,7 @@ def get_equal_length_pts(pts, sample_spacing, method="cardinal"):
     polyData = np_to_polydata(pts)
     spline = vtk.vtkSplineFilter()
     spline.SetInputDataObject(polyData)
-    if method == "cardinal":
-        spline.SetSpline(vtk.vtkCardinalSpline())
-    elif method == "kochanek":
-        spline.SetSpline(vtk.vtkKochanekSpline())
-    else:
-        pass
+    spline.SetSpline(VTK_SPLINE_DICT[spline_name]())
     spline.SetSubdivideToLength()
     spline.SetLength(sample_spacing)
     spline.Update()
@@ -78,13 +80,12 @@ def get_equal_length_pts(pts, sample_spacing, method="cardinal"):
     return equal_length_pts
 
 
-def get_parametric_pts(pts, linear=False, num_pts=-1, as_np=True):
+def get_parametric_pts(pts, spline_name="cardinal", num_pts=-1, as_np=True):
     vtkpts = np_to_points(pts)
     spline = vtk.vtkParametricSpline()
-    if linear:
-        spline.SetXSpline(vtk.vtkSCurveSpline())
-        spline.SetYSpline(vtk.vtkSCurveSpline())
-        spline.SetZSpline(vtk.vtkSCurveSpline())
+    spline.SetXSpline(VTK_SPLINE_DICT[spline_name]())
+    spline.SetYSpline(VTK_SPLINE_DICT[spline_name]())
+    spline.SetZSpline(VTK_SPLINE_DICT[spline_name]())
     spline.SetPoints(vtkpts)
     ret = vtk.vtkParametricFunctionSource()
     ret.SetParametricFunction(spline)
@@ -122,6 +123,38 @@ def write_mesh_to_stl(poly_data, filename="mesh.stl"):
     stlWriter.SetFileName(filename)
     stlWriter.SetInputData(poly_data)
     stlWriter.Write()
+
+
+def get_splines(pts, sample_spacing=0.0, sample_num=0,
+                spline_name="cardinal"):
+    assert (sample_spacing > 0.0) ^ (sample_num > 0), \
+        "have to set sample_num or sample_spacing but not both"
+    pts = np.array(pts)
+    assert pts.ndim == 2, f"pts shape is {pts.shape} not valid"
+    dim = pts.shape[1]
+    if isinstance(spline_name, (list, tuple)):
+        assert len(spline_name) == dim, f"{spline_name} is not valid"
+        spline_list = [VTK_SPLINE_DICT[s]() for s in spline_name]
+    else:
+        spline_list = [VTK_SPLINE_DICT[spline_name]() for _ in range()]
+
+    length_list = np.linalg.norm(pts[1:] - pts[:-1], ord=2, axis=1).cumsum()
+    length_list = np.hstack([0.0, length_list])
+    total_length = length_list[-1]
+    TCoord = []
+    for length, pt in zip(length_list, pts):
+        t = length / total_length
+        TCoord.append(t)
+        for spline, p in zip(spline_list, pt):
+            spline.addPoint(t, p)
+
+    if sample_spacing > 0.0:
+        ts = np.arange(0.0, total_length, sample_spacing)
+    else:
+        ts = np.linspace(0.0, total_length, sample_num)
+
+    for t in ts:
+        pass
 
 
 __all__ = [k for k in globals().keys() if not k.startswith("_")]

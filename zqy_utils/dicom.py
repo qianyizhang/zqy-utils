@@ -159,7 +159,7 @@ def update_tags(img_path, update_dict):
     sitk.WriteImage(img, img_path)
 
 
-_SITK_INTERPOLATOR_DICT = {
+SITK_INTERPOLATOR_DICT = {
     'nearest': sitk.sitkNearestNeighbor,
     'linear': sitk.sitkLinear,
     'gaussian': sitk.sitkGaussian,
@@ -222,11 +222,11 @@ def resample_sitk_image(sitk_image, spacing=None, interpolator=None,
     else:
         new_spacing = [float(s) for s in spacing]
 
-    assert interpolator in _SITK_INTERPOLATOR_DICT.keys(),\
+    assert interpolator in SITK_INTERPOLATOR_DICT.keys(),\
         '`interpolator` should be one of {}'.format(
-            _SITK_INTERPOLATOR_DICT.keys())
+            SITK_INTERPOLATOR_DICT.keys())
 
-    sitk_interpolator = _SITK_INTERPOLATOR_DICT[interpolator]
+    sitk_interpolator = SITK_INTERPOLATOR_DICT[interpolator]
 
     new_size = orig_size*(orig_spacing/new_spacing)
     # Image dimensions are in integers

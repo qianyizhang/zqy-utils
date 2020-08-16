@@ -4,6 +4,7 @@ zqy's utility functions
 '''
 from __future__ import unicode_literals
 
+from .bft import *  # noqa
 from .collect_env_info import *  # noqa
 from .cpr import *  # noqa
 from .debug import *  # noqa
