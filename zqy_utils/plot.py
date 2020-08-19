@@ -18,7 +18,7 @@ def get_colors(labels, palette=DEFAULT_PALETTE, as_float=False):
     colors = np.array(labels).reshape(-1, 1) * palette
     colors = (colors % 255)
     if as_float:
-        colors = 1
+        colors = colors.astype(np.float32)/255.0
     else:
         colors = colors.astype("uint8")
 
