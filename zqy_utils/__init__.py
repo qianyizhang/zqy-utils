@@ -15,9 +15,8 @@ from .plot import *  # noqa
 from .point import *  # noqa
 from .print import *  # noqa
 from .registry import *  # noqa
-from .vtk import *  # noqa
-
 # from .virtual_data import *  # noqa
+from .vtk import *  # noqa
 
 __version__ = "0.2.0"
 __short_description__ = "zqy's utility functions."

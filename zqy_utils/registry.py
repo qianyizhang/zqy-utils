@@ -44,10 +44,10 @@ class Registry(object):
         Register the given object under the the name `obj.__name__`.
         Can be used as either a decorator or not. See docstring of this class for usage.
         """
-        if obj is None:
+        if obj is None or isinstance(obj, str):
             # used as a decorator
             def deco(func_or_class: object) -> object:
-                name = func_or_class.__name__  # pyre-ignore
+                name = func_or_class.__name__ if obj is None else obj
                 self._do_register(name, func_or_class)
                 return func_or_class
 
