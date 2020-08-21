@@ -43,6 +43,7 @@ class TableRenderer(object):
             headers = [col_headers]
             first_col_width = self.first_col_width
         else:
+            template = "| " + template + " |"   # wrap around with '|'
             lines = []
             first_col_width = max(self.first_col_width, len(self.name)+2)
             col_headers = [self.name] + self.col_headers

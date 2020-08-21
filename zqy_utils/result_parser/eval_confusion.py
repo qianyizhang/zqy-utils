@@ -95,8 +95,9 @@ class confusion_counter(object):
                     f"{v:.0f}({r * 100:.2f}%)" if v > 0 else "-"
                     for v, r in zip(values, ratios)
                 ]
-            # highlight the diagnal
-            row_values[index] = f"**{row_values[index]}**"
+            if self.as_md:
+                # highlight the diagnal
+                row_values[index] = f"**{row_values[index]}**"
             t.add_row(row_name, row_values)
         return str(t)
 
